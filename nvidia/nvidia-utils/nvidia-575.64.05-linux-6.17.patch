@@ -1,0 +1,223 @@
+diff -durN nvidia-575.64.05-modules/conftest.sh nvidia-575.64.05-patched/conftest.sh
+--- nvidia-575.64.05-modules/conftest.sh	2025-08-03 00:15:28.355820287 +0200
++++ nvidia-575.64.05-patched/conftest.sh	2025-09-29 01:38:27.607565893 +0200
+@@ -2490,6 +2490,7 @@
+             #include <drm/drm_crtc_helper.h>
+             void drm_helper_mode_fill_fb_struct(struct drm_device *dev,
+                                                 struct drm_framebuffer *fb,
++                                                const struct drm_format_info *info,
+                                                 const struct drm_mode_fb_cmd2 *mode_cmd)
+             {
+                 return;
+@@ -2516,6 +2517,7 @@
+                 echo "$CONFTEST_PREAMBLE
+                 #include <drm/drm_crtc_helper.h>
+                 void drm_helper_mode_fill_fb_struct(struct drm_framebuffer *fb,
++                                                    const struct drm_format_info *info
+                                                     const struct drm_mode_fb_cmd2 *mode_cmd)
+                 {
+                     return;
+@@ -7317,40 +7319,6 @@
+             compile_check_conftest "$CODE" "NV_DRM_GEM_PRIME_MMAP_PRESENT" "" "functions"
+         ;;
+ 
+-        vmf_insert_mixed)
+-            #
+-            # Determine if the function vmf_insert_mixed() is present.
+-            #
+-            # Added by commit 1c8f422059ae ("mm: change return type to
+-            # vm_fault_t") in v4.17.
+-            #
+-            CODE="
+-            #include <linux/mm.h>
+-            void conftest_vmf_insert_mixed() {
+-                vmf_insert_mixed();
+-            }"
+-
+-            compile_check_conftest "$CODE" "NV_VMF_INSERT_MIXED_PRESENT" "" "functions"
+-        ;;
+-
+-        pfn_to_pfn_t)
+-            #
+-            # Determine if the function pfn_to_pfn_t() is present.
+-            #
+-            # Added by commit 34c0fd540e79 ("mm, dax, pmem: introduce pfn_t") in
+-            # v4.5.
+-            #
+-            CODE="
+-            #if defined(NV_LINUX_PFN_T_H_PRESENT)
+-            #include <linux/pfn_t.h>
+-            #endif
+-            void conftest_pfn_to_pfn_t() {
+-                pfn_to_pfn_t();
+-            }"
+-
+-            compile_check_conftest "$CODE" "NV_PFN_TO_PFN_T_PRESENT" "" "functions"
+-        ;;
+-
+         drm_gem_dmabuf_mmap)
+             #
+             # Determine if the drm_gem_dmabuf_mmap() function is present.
+diff -durN nvidia-575.64.05-modules/nvidia/nv-clk.c nvidia-575.64.05-patched/nvidia/nv-clk.c
+--- nvidia-575.64.05-modules/nvidia/nv-clk.c	2025-08-03 00:15:28.352769223 +0200
++++ nvidia-575.64.05-patched/nvidia/nv-clk.c	2025-09-29 01:38:27.607776554 +0200
+@@ -833,7 +833,7 @@
+ #endif
+ }
+ #else
+-NV_STATUS NV_API_CALL nv_set_parent
++static NV_STATUS NV_API_CALL nv_set_parent
+ (
+     nv_state_t *nv,
+     TEGRASOC_WHICH_CLK whichClkOSsource,
+@@ -844,13 +844,13 @@
+ }
+ 
+ 
+-NvBool NV_API_CALL nv_is_clk_enabled(
++static NvBool NV_API_CALL nv_is_clk_enabled(
+     nv_state_t *nv, TEGRASOC_WHICH_CLK whichClkOS)
+ {
+     return NV_FALSE;
+ }
+ 
+-NV_STATUS NV_API_CALL nv_dp_uphy_pll_deinit(nv_state_t *nv)
++static NV_STATUS NV_API_CALL nv_dp_uphy_pll_deinit(nv_state_t *nv)
+ {
+     return NV_ERR_NOT_SUPPORTED;
+ }
+diff -durN nvidia-575.64.05-modules/nvidia/nv-i2c.c nvidia-575.64.05-patched/nvidia/nv-i2c.c
+--- nvidia-575.64.05-modules/nvidia/nv-i2c.c	2025-08-03 00:15:28.351759148 +0200
++++ nvidia-575.64.05-patched/nvidia/nv-i2c.c	2025-09-29 01:38:27.607838174 +0200
+@@ -533,7 +533,7 @@
+ 
+ #if !NV_SUPPORTS_PLATFORM_DISPLAY_DEVICE
+ 
+-NV_STATUS NV_API_CALL nv_i2c_transfer(
++static NV_STATUS NV_API_CALL nv_i2c_transfer(
+     nv_state_t *nv,
+     NvU32 linuxI2CSwPort,
+     NvU8 address,
+@@ -544,11 +544,11 @@
+     return NV_OK;
+ }
+ 
+-void NV_API_CALL nv_i2c_unregister_clients(nv_state_t *nv)
++static void NV_API_CALL nv_i2c_unregister_clients(nv_state_t *nv)
+ {
+ }
+ 
+-NV_STATUS NV_API_CALL nv_i2c_bus_status(
++static NV_STATUS NV_API_CALL nv_i2c_bus_status(
+     nv_state_t *nv,
+     NvU32 linuxI2CSwPort,
+     NvS32 *scl,
+diff -durN nvidia-575.64.05-modules/nvidia/os-interface.c nvidia-575.64.05-patched/nvidia/os-interface.c
+--- nvidia-575.64.05-modules/nvidia/os-interface.c	2025-08-03 00:15:28.352187610 +0200
++++ nvidia-575.64.05-patched/nvidia/os-interface.c	2025-09-29 01:38:27.607948185 +0200
+@@ -2122,7 +2122,7 @@
+     complete_all(&wq->q);
+ }
+ 
+-NV_STATUS NV_API_CALL os_get_tegra_platform
++static NV_STATUS NV_API_CALL os_get_tegra_platform
+ (
+     NvU32 *mode
+ )
+diff -durN nvidia-575.64.05-modules/nvidia-drm/nvidia-drm-drv.c nvidia-575.64.05-patched/nvidia-drm/nvidia-drm-drv.c
+--- nvidia-575.64.05-modules/nvidia-drm/nvidia-drm-drv.c	2025-08-03 00:15:28.381518011 +0200
++++ nvidia-575.64.05-patched/nvidia-drm/nvidia-drm-drv.c	2025-09-29 02:12:51.861551432 +0200
+@@ -212,6 +212,7 @@
+ static struct drm_framebuffer *nv_drm_framebuffer_create(
+     struct drm_device *dev,
+     struct drm_file *file,
++    const struct drm_format_info *info,
+     #if defined(NV_DRM_HELPER_MODE_FILL_FB_STRUCT_HAS_CONST_MODE_CMD_ARG)
+     const struct drm_mode_fb_cmd2 *cmd
+     #else
+@@ -227,6 +228,7 @@
+     fb = nv_drm_internal_framebuffer_create(
+             dev,
+             file,
++            info,
+             &local_cmd);
+ 
+     #if !defined(NV_DRM_HELPER_MODE_FILL_FB_STRUCT_HAS_CONST_MODE_CMD_ARG)
+diff -durN nvidia-575.64.05-modules/nvidia-drm/nvidia-drm-fb.c nvidia-575.64.05-patched/nvidia-drm/nvidia-drm-fb.c
+--- nvidia-575.64.05-modules/nvidia-drm/nvidia-drm-fb.c	2025-08-03 00:15:28.382274015 +0200
++++ nvidia-575.64.05-patched/nvidia-drm/nvidia-drm-fb.c	2025-09-29 01:50:23.753040675 +0200
+@@ -257,6 +257,7 @@
+ struct drm_framebuffer *nv_drm_internal_framebuffer_create(
+     struct drm_device *dev,
+     struct drm_file *file,
++    const struct drm_format_info *info,
+     struct drm_mode_fb_cmd2 *cmd)
+ {
+     struct nv_drm_device *nv_dev = to_nv_device(dev);
+@@ -310,6 +311,7 @@
+         dev,
+         #endif
+         &nv_fb->base,
++        info,
+         cmd);
+ 
+     /*
+diff -durN nvidia-575.64.05-modules/nvidia-drm/nvidia-drm-fb.h nvidia-575.64.05-patched/nvidia-drm/nvidia-drm-fb.h
+--- nvidia-575.64.05-modules/nvidia-drm/nvidia-drm-fb.h	2025-08-03 00:15:28.381182350 +0200
++++ nvidia-575.64.05-patched/nvidia-drm/nvidia-drm-fb.h	2025-09-29 01:50:48.945149467 +0200
+@@ -84,6 +84,7 @@
+ struct drm_framebuffer *nv_drm_internal_framebuffer_create(
+     struct drm_device *dev,
+     struct drm_file *file,
++    const struct drm_format_info *info,
+     struct drm_mode_fb_cmd2 *cmd);
+ 
+ #endif /* NV_DRM_ATOMIC_MODESET_AVAILABLE */
+diff -durN nvidia-575.64.05-modules/nvidia-drm/nvidia-drm-gem-user-memory.c nvidia-575.64.05-patched/nvidia-drm/nvidia-drm-gem-user-memory.c
+--- nvidia-575.64.05-modules/nvidia-drm/nvidia-drm-gem-user-memory.c	2025-08-03 00:15:28.382203045 +0200
++++ nvidia-575.64.05-patched/nvidia-drm/nvidia-drm-gem-user-memory.c	2025-09-29 01:38:27.608186086 +0200
+@@ -36,10 +36,6 @@
+ #include "linux/mm.h"
+ #include "nv-mm.h"
+ 
+-#if defined(NV_LINUX_PFN_T_H_PRESENT)
+-#include "linux/pfn_t.h"
+-#endif
+-
+ #if defined(NV_BSD)
+ #include <vm/vm_pageout.h>
+ #endif
+@@ -116,12 +112,6 @@
+ {
+     int ret;
+ 
+-#if defined(NV_PFN_TO_PFN_T_PRESENT)
+-    ret = vm_insert_mixed(vma, address, pfn_to_pfn_t(pfn));
+-#else
+-    ret = vm_insert_mixed(vma, address, pfn);
+-#endif
+-
+     switch (ret) {
+         case 0:
+         case -EBUSY:
+@@ -156,8 +146,6 @@
+ 
+ #if !defined(NV_LINUX)
+     return vmf_insert_pfn(vma, address, pfn);
+-#elif defined(NV_VMF_INSERT_MIXED_PRESENT)
+-    return vmf_insert_mixed(vma, address, pfn_to_pfn_t(pfn));
+ #else
+     return __nv_vm_insert_mixed_helper(vma, address, pfn);
+ #endif
+diff -durN nvidia-575.64.05-modules/nvidia-drm/nvidia-drm-sources.mk nvidia-575.64.05-patched/nvidia-drm/nvidia-drm-sources.mk
+--- nvidia-575.64.05-modules/nvidia-drm/nvidia-drm-sources.mk	2025-08-03 00:15:28.380818568 +0200
++++ nvidia-575.64.05-patched/nvidia-drm/nvidia-drm-sources.mk	2025-09-29 01:38:27.608213496 +0200
+@@ -79,8 +79,6 @@
+ NV_CONFTEST_FUNCTION_COMPILE_TESTS += drm_crtc_enable_color_mgmt
+ NV_CONFTEST_FUNCTION_COMPILE_TESTS += drm_plane_create_color_properties
+ NV_CONFTEST_FUNCTION_COMPILE_TESTS += drm_atomic_helper_legacy_gamma_set
+-NV_CONFTEST_FUNCTION_COMPILE_TESTS += vmf_insert_mixed
+-NV_CONFTEST_FUNCTION_COMPILE_TESTS += pfn_to_pfn_t
+ NV_CONFTEST_FUNCTION_COMPILE_TESTS += drm_gem_prime_mmap
+ 
+ NV_CONFTEST_TYPE_COMPILE_TESTS += drm_bus_present
