@@ -8,6 +8,8 @@
 
 This repository is a fork of CachyOS PKGBUILDS, that aims to make nvidia open kernel 575 compilable with the latest kernel (6.17, at the time of writing), while keeping the module compatible with the current LTS kernel (6.12).
 
+Thanks a lot to `dinosaur` on the [NVIDIA forum](https://forums.developer.nvidia.com/t/575-release-feedback-discussion/330513/501) for the patches, I'm only updating the packages.
+
 # CachyOS PKGBUILDS
 
 [CachyOS](https://cachyos.org/) PKGBUILDS is a collection of [PKGBUILD](https://wiki.archlinux.org/index.php/PKGBUILD) scripts for building and installing packages on any Arch Linux-based operating system.
